@@ -266,7 +266,7 @@ def create_model_and_train(x_train, patience=15, test_name='sample'):
 
 def run_grid_search(X_train, location_count=500):
     # Create a Keras classifier wrapper for Scikit-learn
-    model = KerasRegressor(build_fn=create_model, verbose=0)
+    model = KerasRegressor(build_fn=create_model, x_train=X_train, verbose=0)
 
     # Define the hyperparameter grid
     param_grid = {
