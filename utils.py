@@ -9,12 +9,32 @@ from keras.wrappers.scikit_learn import KerasRegressor
 from keras.callbacks import LearningRateScheduler
 from scipy import stats
 from itertools import combinations
+import h5py
 
 from mintpy.utils import readfile
 
 
 # Generated training sequences for use in the model.
 TIME_STEPS = 20
+
+def fetch_date_list(dataset_file, dataset_name='HDFEOS/GRIDS/timeseries/observation/date'):
+    
+    # Open the HDF5 file
+    with h5py.File(dataset_file, 'r') as hf:
+        # Check if the dataset exists in the file
+        if dataset_name in hf:
+            # Access the dataset and retrieve its data as a NumPy array
+            dataset = hf[dataset_name]
+            dataset_data = dataset[()]
+
+            # Now, dataset_data contains the data from the specified dataset
+            print(dataset_data)
+        else:
+            print(f"Dataset '{dataset_name}' not found in the HDF5 file.")
+
+    date_list = [element.decode() for element in list(dataset_data)]
+
+    return date_list
 
 def create_sequences(values, time_steps=TIME_STEPS):
     output = []
