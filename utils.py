@@ -43,6 +43,8 @@ def create_sequences(values, time_steps=TIME_STEPS):
     return np.stack(output)
 
 def fetch_dataset_preprocess(dataset_file, date_list, reference='first_colomn', test_setting='Grid', x_cord_init=750, y_cord_init=3500, max_loction_count = 500, grid_size_val=30):
+    RANDOM_PICK = False
+
     mask_data, meta_mask = readfile.read(dataset_file, datasetName="HDFEOS/GRIDS/timeseries/quality/mask")
     ts_data, meta = readfile.read(dataset_file)
 
@@ -68,35 +70,62 @@ def fetch_dataset_preprocess(dataset_file, date_list, reference='first_colomn', 
         raise ValueError("unknown test setting")
     count = 0 
 
+    chosen_combinations = set()
     while df_mine_blasting.shape[1]<max_loction_count:
-        try:
-            is_empty = mask_data[x_cord,y_cord]
-        except IndexError:
-            raise("index error over here-mask data")
+        if RANDOM_PICK:
+            import random 
 
-        if not is_empty:
+            x_cord = random.randint(x_cord_init, x_cord_max)
+            y_cord = random.randint(y_cord_init, y_cord_max)
+
             try:
-                loc_timeseries = ts_data[:,x_cord,y_cord]
+                is_empty = mask_data[x_cord,y_cord]
             except IndexError:
-                raise("index error over here- timeseries")
+                raise("index error over here-mask data")
 
-            if not np.all(loc_timeseries==0):
-                df_mine_blasting['values_%d_%d'%(x_cord, y_cord)] = loc_timeseries
-                # print(df_mine_blasting.shape[1])
-            else:
-                count +=1 
-        
-        if x_cord == x_cord_max - 1 and y_cord == y_cord_max - 1:
-            # stop of both x_cord and y_cord have reached cap 
-            print("grid cap reached")
-            break
-        elif y_cord != y_cord_max - 1:
-            y_cord += 1 # reset x_cord to zero
-        elif y_cord == y_cord_max - 1:
-            x_cord += 1 # increase y_cord by 1
-            y_cord = y_cord_init
+            if not is_empty:
+                try:
+                    loc_timeseries = ts_data[:,x_cord,y_cord]
+                except IndexError:
+                    raise("index error over here- timeseries")
+
+                if not np.all(loc_timeseries==0):
+                    if (x_cord, y_cord) not in chosen_combinations:
+                        chosen_combinations.add((x_cord, y_cord))
+                        df_mine_blasting['values_%d_%d'%(x_cord, y_cord)] = loc_timeseries
+                        # print(df_mine_blasting.shape[1])
+                else:
+                    count +=1
+            
         else:
-            raise ValueError("coming into the else case")
+            try:
+                is_empty = mask_data[x_cord,y_cord]
+            except IndexError:
+                raise("index error over here-mask data")
+
+            if not is_empty:
+                try:
+                    loc_timeseries = ts_data[:,x_cord,y_cord]
+                except IndexError:
+                    raise("index error over here- timeseries")
+
+                if not np.all(loc_timeseries==0):
+                    df_mine_blasting['values_%d_%d'%(x_cord, y_cord)] = loc_timeseries
+                    # print(df_mine_blasting.shape[1])
+                else:
+                    count +=1 
+            
+            if x_cord == x_cord_max - 1 and y_cord == y_cord_max - 1:
+                # stop of both x_cord and y_cord have reached cap 
+                print("grid cap reached")
+                break
+            elif y_cord != y_cord_max - 1:
+                y_cord += 1 # reset x_cord to zero
+            elif y_cord == y_cord_max - 1:
+                x_cord += 1 # increase y_cord by 1
+                y_cord = y_cord_init
+            else:
+                raise ValueError("coming into the else case")
         
     # normalize the data 
     df_mine_blasting_values=(df_mine_blasting-df_mine_blasting.mean())/df_mine_blasting.std()
@@ -199,9 +228,30 @@ def train_model(model, x_train, patience, test_name):
     figure_path = '%s/test_MAE_loss_count.png' % test_name
     plt.savefig(figure_path)
 
+    # cumulative_sum = np.cumsum(n) / np.sum(n)
+    # # Find the bin corresponding to the top 5% value
+    # top_5_percent_bin = np.argmax(cumulative_sum >= 0.99)
+
+    # # Get the bin boundaries
+    # bin_lower = bins[top_5_percent_bin]
+    # bin_upper = bins[top_5_percent_bin + 1]
+
+    # print("threshold : ", bin_upper)
+
+    # # Detect all the samples which are anomalies.
+    # threshold = bin_upper  # pick top 10% instead of this
+    # anomalies = train_mae_loss > threshold
+    # print("Number of anomaly samples: ", np.sum(anomalies))
+    # print("Indices of anomaly samples: ", np.where(anomalies))
+
+    return train_mae_loss
+
+def generate_anomalies(train_mae_loss, cum_sum_threshold=0.99):
+    n, bins, patches = plt.hist(train_mae_loss.reshape((-1)), bins=50)
+
     cumulative_sum = np.cumsum(n) / np.sum(n)
     # Find the bin corresponding to the top 5% value
-    top_5_percent_bin = np.argmax(cumulative_sum >= 0.99)
+    top_5_percent_bin = np.argmax(cumulative_sum >= cum_sum_threshold)
 
     # Get the bin boundaries
     bin_lower = bins[top_5_percent_bin]
@@ -215,7 +265,7 @@ def train_model(model, x_train, patience, test_name):
     print("Number of anomaly samples: ", np.sum(anomalies))
     print("Indices of anomaly samples: ", np.where(anomalies))
 
-    return anomalies, train_mae_loss
+    return anomalies
 
 
 def create_model_and_train(x_train, patience=15, test_name='sample'):
@@ -302,8 +352,14 @@ def run_grid_search(X_train, location_count=500):
     print("Best: %f using %s" % (grid_result.best_score_, grid_result.best_params_))
 
 
+    return create_model(X_train, 
+                        dropout_rate=grid_result.best_params_['dropout_rate'], 
+                        layer_1_size=grid_result.best_params_['layer_1_size'], 
+                        layer_2_size=grid_result.best_params_['layer_2_size'],
+                        )
 
-def scatter_plot_anomalies(df_mine_blasting_values, anomalies, latitude, longitude, date_list, test_name, output_file_name="output.csv"):
+
+def scatter_plot_anomalies(df_mine_blasting_values, anomalies, latitude, longitude, date_list, test_name, output_file_name="output.csv", anomaly_thresh=0.99):
     from datetime import datetime
 
     df_output = []
@@ -349,10 +405,12 @@ def scatter_plot_anomalies(df_mine_blasting_values, anomalies, latitude, longitu
             plt.savefig(figure_path)
 
             df_output.append({
-                'TS': [df_mine_blasting_values[column_name]],
+                'TS': [df_mine_blasting_values[column_name].values],
                 'start_anomaly': df_subset.index[0],
                 'anomaly sample length': len(df_subset),
-                'prob_anomaly': 0.99,  # this value is hard coded for now 
+                'prob_anomaly': anomaly_thresh,  # this value is hard coded for now 
+                'lat': lat_val,
+                'lon': lon_val,
             })
         else:
             # no anomaly in this time series 
@@ -361,11 +419,13 @@ def scatter_plot_anomalies(df_mine_blasting_values, anomalies, latitude, longitu
                 'start_anomaly': 0,
                 'window length': 0,
                 'prob_anomaly': 0, 
+                'lat': lat_val,
+                'lon': lon_val,
             })
 
-
+    amended_output_file_name = output_file_name.replace(".csv", "_%d.csv"%(anomaly_thresh*100))
     df_output = pd.DataFrame(df_output)
-    df_output.to_csv(output_file_name)
+    df_output.to_csv(amended_output_file_name)
 
     return count_list
 
@@ -474,7 +534,8 @@ def run_test(dataset_file, date_list, reference, latitude, longitude, test_name,
                             layer_1_size=512, 
                             layer_2_size=1024, 
                             final_filter_size=location_count )
-            anomalies, all_train_loss = train_model(best_model, x_train, patience=50, test_name=test_name)
+            all_train_loss = train_model(best_model, x_train, patience=50, test_name=test_name)
+            anomalies = generate_anomalies(all_train_loss, 0.95)
             model_AE_array.append(all_train_loss)
             model_MAE_array.append(np.mean(np.abs(all_train_loss), axis=1))
             # anomalies = create_model_and_train(x_train, patience=50, test_name)
@@ -503,7 +564,11 @@ def run_test(dataset_file, date_list, reference, latitude, longitude, test_name,
         x_train, df_mine_blasting_values_reference_adjusted = fetch_dataset_preprocess(dataset_file, date_list, reference=reference, test_setting=test_setting, x_cord_init=x_cord_start, y_cord_init=y_cord_start, max_loction_count=location_count, grid_size_val=grid_size_val)
         
         best_model = run_grid_search(x_train, location_count=location_count)
-        anomalies, train_mae_loss = train_model(best_model, x_train, patience=50, test_name=test_name)
+        train_mae_loss = train_model(best_model, x_train, patience=50, test_name=test_name)
         
-        # anomalies = create_model_and_train(x_train, patience=50, test_name)
-        count_list = scatter_plot_anomalies(df_mine_blasting_values_reference_adjusted, anomalies, latitude, longitude,date_list, test_name, output_file_name=output_file_name)
+        for anomaly_thresh in [0.90, 0.95, 0.99]:
+    
+            anomalies = generate_anomalies(train_mae_loss, anomaly_thresh)
+            
+            # anomalies = create_model_and_train(x_train, patience=50, test_name)
+            count_list = scatter_plot_anomalies(df_mine_blasting_values_reference_adjusted, anomalies, latitude, longitude,date_list, test_name, output_file_name=output_file_name, anomaly_thresh=anomaly_thresh)
