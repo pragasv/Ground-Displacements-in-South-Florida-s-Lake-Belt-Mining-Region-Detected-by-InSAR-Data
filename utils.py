@@ -464,7 +464,7 @@ def create_sub_folders(test_folder_name):
 
     if not os.path.exists(test_folder_name):
         os.makedirs(test_folder_name)
-        os.makedirs(test_folder_name+'anomaly')
+        os.makedirs(test_folder_name+'/anomaly')
         print(f"Folder '{test_folder_name}' created.")
     else:
         print(f"Folder '{test_folder_name}' already exists.")
