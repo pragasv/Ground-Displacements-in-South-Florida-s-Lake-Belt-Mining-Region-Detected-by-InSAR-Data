@@ -2,6 +2,12 @@
 
 - install the packages from requirements.txt
 - create a folder named 'dataset' & transfer the '.he5' file inside it / use the full path of the 'he.5' file
+- run the following commands in matlab to obtain open street maps functionality: 
+    name = 'openstreetmap';
+    url = 'https://a.tile.openstreetmap.org/${z}/${x}/${y}.png';
+    copyright = char(uint8(169));
+    attribution = copyright + "OpenStreetMap contributors";
+    addCustomBasemap(name,url,'Attribution',attribution)
 
 - the following arguments can be parsed : 
 
@@ -13,7 +19,6 @@
   6) '--grid_size', default=30, type=int, help='length of the square grid (#pixels)')
   7) '--method', default='Grid', help='method you want to do search. Available : Grid, Whole, Whole_grid')
   8) '--output_filename', default='output.csv', help='file name of the output file')
-
 
     TODO
     - the time series selected based on a radius needs to be implemented 
