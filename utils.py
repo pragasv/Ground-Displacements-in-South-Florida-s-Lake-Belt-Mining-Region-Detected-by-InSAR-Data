@@ -383,16 +383,15 @@ def scatter_plot_anomalies(df_mine_blasting_values, anomalies, latitude, longitu
 
         df_subset = df_mine_blasting_values[column_name].iloc[anomalous_data_indices]
         df_subset_base = df_mine_blasting_values[column_name].iloc[anomalous_data_indices]
+        split_string = column_name.split('_')
+        last_two_numbers = split_string[-2:]
+        last_two_numbers = [int(num) for num in last_two_numbers]
 
+        lat_val = latitude[last_two_numbers[0],last_two_numbers[1]]
+        lon_val = longitude[last_two_numbers[0],last_two_numbers[1]]
 
         if len(df_subset)>0:
-            split_string = column_name.split('_')
-            last_two_numbers = split_string[-2:]
-            last_two_numbers = [int(num) for num in last_two_numbers]
-
-            lat_val = latitude[last_two_numbers[0],last_two_numbers[1]]
        
-            lon_val = longitude[last_two_numbers[0],last_two_numbers[1]]
             plt.figure(figsize=(18, 8))
             plt.scatter(df_mine_blasting_values.index, df_mine_blasting_values[column_name])
             plt.scatter(df_subset.index, df_subset.values, color="r")
