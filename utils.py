@@ -426,6 +426,13 @@ def scatter_plot_anomalies(df_mine_blasting_values, anomalies, latitude, longitu
     df_output = pd.DataFrame(df_output)
     df_output.to_csv(amended_output_file_name)
 
+    ## preprocess output for plotting 
+    list_needed_columns = ['start_anomaly', 'anomaly sample length', 'prob_anomaly', 'lat', 'lon']
+
+    df_preprocessed = df_output[list_needed_columns]
+    amended_output_file_name = "preprocessed_output_%d_random.csv"%(anomaly_thresh*100)
+    df_preprocessed.to_csv(amended_output_file_name)
+
     return count_list
 
 def find_columns_with_true(matrix):

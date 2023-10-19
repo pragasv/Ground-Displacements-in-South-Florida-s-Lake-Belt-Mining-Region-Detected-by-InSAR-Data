@@ -49,7 +49,7 @@ if __name__ == '__main__':
         create_sub_folders(test_name)
         run_test(dataset_file, date_list, reference, latitude, longitude, test_name, test_setting='Grid', x_cord_start=x_cord_start, y_cord_start=y_cord_start, location_count=location_count, grid_size_val=grid_size, output_file_name=output_filename)
 
-    elif test_method=='Grid':
+    elif test_method=='Whole':
     # ###############################################
     # ############Test whole dataset ################
     # ###############################################
