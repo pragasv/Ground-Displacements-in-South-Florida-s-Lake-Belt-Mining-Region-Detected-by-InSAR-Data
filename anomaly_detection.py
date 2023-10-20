@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from mintpy.utils import readfile
 from utils import run_test, create_sub_folders, find_cordinates_lat_lon, fetch_date_list
 import tensorflow as tf
