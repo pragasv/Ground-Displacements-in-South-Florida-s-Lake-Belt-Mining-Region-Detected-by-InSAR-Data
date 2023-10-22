@@ -67,10 +67,13 @@ if __name__ == '__main__':
     lalo_flag = args.lalo_flag
     suffix = "_" + args.suffix
 
-    str_latlon="_{:.3f}_{:.3f}".format(base_lat, base_lon)
-
     print('suffix: ', suffix)
     print('lalo_flag: ', args.lalo_flag)
+
+    if lalo_flag:
+       str_latlon="_{:.3f}_{:.3f}".format(base_lat, base_lon)
+    else:
+       str_latlon=''
 
     latitude, dict_lat = readfile.read(dataset_file, datasetName="/HDFEOS/GRIDS/timeseries/geometry/latitude")
     longitude, dict_lon = readfile.read(dataset_file, datasetName="/HDFEOS/GRIDS/timeseries/geometry/longitude")
