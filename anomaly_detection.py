@@ -17,7 +17,12 @@ Todo:
 EXAMPLE = """examples:
 
     anomaly_detection.py S1_IW23_048_0081_0083_20150921_20230915_N25850_N26000_W080420_W080220_PS.he5 --lat 25.928337 --lon -80.31182
-         This will create output files with the default names:
+         This will create output files with the default names including lalo:
+             output_99_25.928_-80.312.csv
+             preproc_random_99_25.928_-80.312.csv
+    
+    anomaly_detection.py S1_IW23_048_0081_0083_20150921_20230915_N25850_N26000_W080420_W080220_PS.he5 --lat 25.928337 --lon -80.31182 --nolalo
+         The --no-lalo option removes the lalo string:
              output_99.csv
              preproc_random_99.csv
     
