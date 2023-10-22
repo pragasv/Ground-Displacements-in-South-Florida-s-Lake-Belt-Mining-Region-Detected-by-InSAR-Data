@@ -5,16 +5,43 @@ import tensorflow as tf
 import argparse
 import time
 
-
 # this code segment runs the model and save the best model
+
+NOTE = """
+Todo:
+- Let's make the calculation center a positional argument:  25.928337,80.31182 so that we can call:   anomaly_detection.py S1_*.he5   25.928337,-80.31182
+- Currently it fails if location does not exist in latitude/longitude. It should just use pixel in the vicinity
+- rename test_smallgrid ?
+"""
+
+EXAMPLE = """examples:
+
+    anomaly_detection.py S1_IW23_048_0081_0083_20150921_20230915_N25850_N26000_W080420_W080220_PS.he5 --lat 25.928337 --lon -80.31182
+         This will create output files with the default names:
+             output_99.csv
+             preproc_random_99.csv
+    
+    anomaly_detection.py --dataset_file S1_IW23_048_0081_0083_20150921_20230915_N25850_N26000_W080420_W080220_PS.he5  --lat 25.9695 --lon -80.3739 --suffix EvergladesHS --no-lalo
+         Filenames created:
+             output_99_EvergladesHS.csv
+             preproc_random_99_EvergladesHS.csv
+
+    anomaly_detection.py --dataset_file S1_IW23_048_0081_0083_20150921_20230915_N25850_N26000_W080420_W080220_PS.he5  --lat 25.9695 --lon -80.3739 --suffix EvergladesHS
+         Filenames created:
+             output_99_EvergladesHS_25.928_-80.312.csv
+             preproc_random_90_EvergladesHS_25.928_-80.312.csv
+
+"""
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(description='anomaly detection on the model')
-    parser.add_argument('--dataset_file', default="dataset/S1_IW23_048_0081_0083_20160412_20230611_N25850_N26000_W080420_W080220_PS.he5", help='the path to dataset file')
+    parser = argparse.ArgumentParser(description='Detection of anomalies in InSAR time series',
+                                     formatter_class=argparse.RawTextHelpFormatter, epilog=NOTE + '\n' + EXAMPLE)
+    parser.add_argument('dataset_file', nargs='?', default=None, help='timeseries file in hdf5eos format (e.g. S1_*.he5 file.\n')
+    #parser.add_argument('--dataset_file', default="dataset/S1_IW23_048_0081_0083_20160412_20230611_N25850_N26000_W080420_W080220_PS.he5", help='the path to dataset file')
     parser.add_argument('--reference', default="average", help='reference is set to average alternate is coded for yet')
-    parser.add_argument('--lat', default=25.928337, type=float, help='latitude of interest')
-    parser.add_argument('--lon', default=-80.31182, type=float, help='longitude of interest')
+    parser.add_argument('--lat', default=25.928337, type=float, help='latitude of interest, (default: 25.928337)')
+    parser.add_argument('--lon', default=-80.31182, type=float, help='longitude of interest, default: -80.31182)')
     parser.add_argument('--max_location', default=500, type=int, help='maximum number of timeseries')
     parser.add_argument('--grid_size', default=30, type=int, help='length of the square grid (#pixels)')
     parser.add_argument('--method', default='Grid', help='method you want to do search. Available : Grid, Whole, Whole_grid')
