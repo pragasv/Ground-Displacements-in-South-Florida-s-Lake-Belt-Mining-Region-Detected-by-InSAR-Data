@@ -10,6 +10,7 @@ from keras.callbacks import LearningRateScheduler
 from scipy import stats
 from itertools import combinations
 import h5py
+import time
 
 from mintpy.utils import readfile
 
@@ -359,12 +360,13 @@ def run_grid_search(X_train, location_count=500):
                         )
 
 
-def scatter_plot_anomalies(df_mine_blasting_values, anomalies, latitude, longitude, date_list, test_name, output_file_name="output.csv", anomaly_thresh=0.99):
+def scatter_plot_anomalies(df_mine_blasting_values, anomalies, latitude, longitude, date_list, test_name, suffix="", str_latlon="", anomaly_thresh=0.99):
     from datetime import datetime
 
     df_output = []
 
     count_list = []
+
     for column_idx in range(len(df_mine_blasting_values.columns)):
         column_name =  df_mine_blasting_values.columns[column_idx]
 
@@ -422,16 +424,20 @@ def scatter_plot_anomalies(df_mine_blasting_values, anomalies, latitude, longitu
                 'lon': lon_val,
             })
 
-    amended_output_file_name = output_file_name.replace(".csv", "_%d.csv"%(anomaly_thresh*100))
+    amended_output_file_name1 = "output_%d"%(anomaly_thresh*100) + suffix + str_latlon + '.csv' 
+    print('output_file:', amended_output_file_name1)
+    
     df_output = pd.DataFrame(df_output)
-    df_output.to_csv(amended_output_file_name)
+    df_output.to_csv(amended_output_file_name1)
 
     ## preprocess output for plotting 
     list_needed_columns = ['start_anomaly', 'anomaly sample length', 'prob_anomaly', 'lat', 'lon']
 
     df_preprocessed = df_output[list_needed_columns]
-    amended_output_file_name = "preprocessed_output_%d_random.csv"%(anomaly_thresh*100)
-    df_preprocessed.to_csv(amended_output_file_name)
+    amended_output_file_name2 = "preproc_random_%d"%(anomaly_thresh*100) + suffix + str_latlon + '.csv' 
+    print('preprocessed output_file1:', amended_output_file_name2)
+
+    df_preprocessed.to_csv(amended_output_file_name2)
 
     return count_list
 
@@ -518,7 +524,7 @@ def pairwise_t_tests(model_accuracies_array):
 
     return p_values
 
-def run_test(dataset_file, date_list, reference, latitude, longitude, test_name, test_setting, x_cord_start=750, y_cord_start=3500,location_count=500, grid_size_val=30, output_file_name="output.csv"):
+def run_test(dataset_file, date_list, reference, latitude, longitude, test_name, test_setting, x_cord_start=750, y_cord_start=3500,location_count=500, grid_size_val=30, suffix='', str_latlon=''):
     # first model was trained on : x_cord=750, y_cord=3500
     if test_setting == "Whole_grid":
         x_range = (0, 973)
@@ -529,9 +535,13 @@ def run_test(dataset_file, date_list, reference, latitude, longitude, test_name,
         model_AE_array = []
         model_MAE_array = []
 
+        anomaly_thresh = 99
+        count_list = scatter_plot_anomalies(df_mine_blasting_values_reference_adjusted, anomalies, latitude, longitude,
+                                            date_list, test_name, suffix=suffix, str_latlon=str_latlon, anomaly_thresh=anomaly_thresh)
+
         for grid_cords in grids:
-            
-            x_train, df_mine_blasting_values_reference_adjusted = fetch_dataset_preprocess(dataset_file, date_list, reference=reference, test_setting='Grid', x_cord_init=grid_cords[0], y_cord_init=grid_cords[1], max_loction_count=location_count, grid_size_val=grid_size_val)
+            x_train, df_mine_blasting_values_reference_adjusted = fetch_dataset_preprocess(dataset_file, date_list, reference=reference, 
+                                            test_setting='Grid', x_cord_init=grid_cords[0], y_cord_init=grid_cords[1], max_loction_count=location_count, grid_size_val=grid_size_val)
             # best_model = run_grid_search(x_train)
             best_model = create_model(x_train, 
                             activation="relu", 
@@ -567,7 +577,8 @@ def run_test(dataset_file, date_list, reference, latitude, longitude, test_name,
 
 
     else:
-        x_train, df_mine_blasting_values_reference_adjusted = fetch_dataset_preprocess(dataset_file, date_list, reference=reference, test_setting=test_setting, x_cord_init=x_cord_start, y_cord_init=y_cord_start, max_loction_count=location_count, grid_size_val=grid_size_val)
+        x_train, df_mine_blasting_values_reference_adjusted = fetch_dataset_preprocess(dataset_file, date_list, reference=reference, test_setting=test_setting, 
+                                       x_cord_init=x_cord_start, y_cord_init=y_cord_start, max_loction_count=location_count, grid_size_val=grid_size_val)
         
         best_model = run_grid_search(x_train, location_count=location_count)
         train_mae_loss = train_model(best_model, x_train, patience=50, test_name=test_name)
@@ -577,4 +588,6 @@ def run_test(dataset_file, date_list, reference, latitude, longitude, test_name,
             anomalies = generate_anomalies(train_mae_loss, anomaly_thresh)
             
             # anomalies = create_model_and_train(x_train, patience=50, test_name)
-            count_list = scatter_plot_anomalies(df_mine_blasting_values_reference_adjusted, anomalies, latitude, longitude,date_list, test_name, output_file_name=output_file_name, anomaly_thresh=anomaly_thresh)
+            count_list = scatter_plot_anomalies(df_mine_blasting_values_reference_adjusted, anomalies, latitude, longitude,
+                               date_list, test_name, suffix=suffix, str_latlon=str_latlon, anomaly_thresh=anomaly_thresh)
+

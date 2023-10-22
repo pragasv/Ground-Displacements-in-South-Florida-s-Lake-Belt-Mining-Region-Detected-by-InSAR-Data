@@ -3,6 +3,7 @@ from mintpy.utils import readfile
 from utils import run_test, create_sub_folders, find_cordinates_lat_lon, fetch_date_list
 import tensorflow as tf
 import argparse
+import time
 
 
 # this code segment runs the model and save the best model
@@ -17,7 +18,10 @@ if __name__ == '__main__':
     parser.add_argument('--max_location', default=500, type=int, help='maximum number of timeseries')
     parser.add_argument('--grid_size', default=30, type=int, help='length of the square grid (#pixels)')
     parser.add_argument('--method', default='Grid', help='method you want to do search. Available : Grid, Whole, Whole_grid')
-    parser.add_argument('--output_filename', default='output.csv', help='file name of the output file')
+    parser.add_argument('--suffix', default='', dest='suffix', type=str, help='suffix for output file name (default='')')
+
+    parser.add_argument('--lalo', dest='lalo_flag', action='store_true', default=True, help='add lat/long (lalo) string to outfile names (Default=True)')
+    parser.add_argument('--no-lalo', dest='lalo_flag', action='store_false', help="Don't add lat/long (lalo) string to outfile name.")
 
     args = parser.parse_args()
 
@@ -28,9 +32,14 @@ if __name__ == '__main__':
     base_lon = args.lon
     test_method = args.method
     grid_size = args.grid_size
-    output_filename = args.output_filename
+    lalo_flag = args.lalo_flag
+    suffix = "_" + args.suffix
 
-    # dataset_file = 'dataset/S1_IW23_048_0081_0083_20160412_20230611_N25850_N26000_W080420_W080220_PS.he5'
+    str_latlon="_{:.3f}_{:.3f}".format(base_lat, base_lon)
+
+    print('suffix: ', suffix)
+    print('lalo_flag: ', args.lalo_flag)
+
     latitude, dict_lat = readfile.read(dataset_file, datasetName="/HDFEOS/GRIDS/timeseries/geometry/latitude")
     longitude, dict_lon = readfile.read(dataset_file, datasetName="/HDFEOS/GRIDS/timeseries/geometry/longitude")
     date_list = fetch_date_list(dataset_file, dataset_name='HDFEOS/GRIDS/timeseries/observation/date')
@@ -46,9 +55,10 @@ if __name__ == '__main__':
     ###############################################
     if test_method=='Grid':
 
-        test_name="test_smallgrid"
+        test_name="test_smallgrid" + str_latlon + suffix
         create_sub_folders(test_name)
-        run_test(dataset_file, date_list, reference, latitude, longitude, test_name, test_setting='Grid', x_cord_start=x_cord_start, y_cord_start=y_cord_start, location_count=location_count, grid_size_val=grid_size, output_file_name=output_filename)
+        run_test(dataset_file, date_list, reference, latitude, longitude, test_name, test_setting='Grid', x_cord_start=x_cord_start, y_cord_start=y_cord_start, 
+                 location_count=location_count, grid_size_val=grid_size, suffix=suffix, str_latlon=str_latlon)
 
     elif test_method=='Whole':
     # ###############################################
